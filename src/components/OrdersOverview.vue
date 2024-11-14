@@ -25,7 +25,13 @@ let showControls = ref<{ [key: string]: boolean }>({});
 watch(
   () => props.orderList,
   () => {
-    orderList.value = props.orderList;
+    orderList.value = props.orderList.slice().sort((a, b) => {
+      if (a.settled && !b.settled) return 1;
+      if (!a.settled && b.settled) return -1;
+      if (a.finished && !b.finished) return 1;
+      if (!a.finished && b.finished) return -1;
+      return 0;
+    });
   },
   { immediate: true }
 );

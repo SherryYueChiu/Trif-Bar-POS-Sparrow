@@ -27,11 +27,18 @@ let showControls = ref<{ [key: string]: boolean }>({});
 watch(
   () => props.orderList,
   () => {
-    orderList.value = props.orderList.filter((_: OrderDTO) =>
-      Object.values(_?.orderItems || {}).some(
-        (_) => _?.preferBartender === +props.bartenderId
+    orderList.value = props.orderList
+      .filter((_: OrderDTO) =>
+        Object.values(_?.orderItems || {}).some(
+          (_) => _?.preferBartender === +props.bartenderId
+        )
       )
-    );
+      .slice()
+      .sort((a, b) => {
+        if (a.finished && !b.finished) return 1;
+        if (!a.finished && b.finished) return -1;
+        return 0;
+      });
   },
   { immediate: true }
 );
@@ -224,9 +231,13 @@ function dismissAllDishesControls() {
     <div class="orderCardSets" v-for="order in orderList" :key="order.uuid">
       <!-- 一個品項一張卡片 -->
       <div
-        v-for="dish in Object.values(order.orderItems).filter(
-          (_) => _.preferBartender === +props.bartenderId
-        )"
+        v-for="dish in Object.values(order.orderItems)
+          .filter((_) => _.preferBartender === +props.bartenderId)
+          .sort((a, b) => {
+            if (a.finished && !b.finished) return 1;
+            if (!a.finished && b.finished) return -1;
+            return 0;
+          })"
         :key="dish.productId"
         class="orderCard"
         @click.stop="manageDishStatus(order.orderId, dish.productId)"
