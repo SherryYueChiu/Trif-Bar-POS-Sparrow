@@ -1,0 +1,16 @@
+@font-face {
+  font-family: jf-openhuninn;
+  src: url(./assets/jf-openhuninn-2.0.ttf);
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: jf-openhuninn, "Noto Sans CJK TC", "Microsoft JhengHei", PingFang, STHeiti, sans-serif, serif;
+}

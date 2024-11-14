@@ -1,0 +1,208 @@
+<script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from "vue";
+import DataService from "../service/DataService";
+import axios from "axios";
+import { AttendeeType } from "../types/attendee.d"
+let attendeeList = ref<AttendeeType[]>([]);
+
+onMounted(async () => {
+  DataService.getAll().on("value", onDataChange);
+})
+onBeforeUnmount(() => {
+  DataService.getAll().off("value", onDataChange);
+})
+
+function onDataChange(data) {
+  attendeeList.value = Object.values(data.val())
+    .sort((a: AttendeeType, b: AttendeeType) => {
+      if (a.achieved === b.achieved) {
+        return a.clicks - b.clicks; // 相同achieved属性，按照clicks升冪排序
+      } else if (a.achieved === false) {
+        return -1; // achieved为false的在前面
+      } else {
+        return 1; // achieved为true的在后面
+      }
+    }) as AttendeeType[];
+}
+
+function onClickAttendee(id: string) {
+  const subscribedListRaw = localStorage.getItem('subscribedList');
+  if (!subscribedListRaw) localStorage.setItem('subscribedList', '{}');
+  const subscribedList = JSON.parse(localStorage.getItem('subscribedList'));
+  if (!subscribedList?.[id]) {
+    subscribedList[id] = true;
+    localStorage.setItem('subscribedList', JSON.stringify(subscribedList));
+    axios.post('https://addvisitcount2-bzjkpllbra-uc.a.run.app', {
+      data: { ID: id }
+    }).then(() => {
+      location.href = 'https://dcard.me/' + id;
+    }).catch(err => {
+      console.warn(err);
+    })
+  } else {
+    location.href = 'https://dcard.me/' + id;
+  }
+
+}
+</script>
+
+<template>
+  <div class="wrapper">
+    <h2>點進去幫忙訂閱</h2>
+    <div class="container">
+      <div class="box" v-for="(attendee) in attendeeList" :class="{ rainbow: attendee?.achieved === true }"
+        @click="onClickAttendee(attendee.ID)">
+        <img class="avatar" src="../assets/avatar/catAvatar.png" :class="{ rainbow: attendee?.achieved === true }">
+        <div class="name">{{ attendee?.name || '' }}</div>
+        <div class="intro">
+          {{ attendee?.achieved === true ? `已達標` : `點閱數：${attendee?.clicks || 0}` }}
+        </div>
+        <img class="acheivedSticker" v-show="attendee?.achieved === true" src="../assets/cheers.gif">
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.wrapper {
+  padding: 20px 0 20px;
+}
+
+h2 {
+  font-size: 24px;
+  font-weight: 600;
+  padding: 0 0 0 7%;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 48% 48%;
+  gap: 20px;
+  align-items: start;
+  max-height: 305px;
+  padding: 10px 5% 20px;
+  overflow-y: scroll;
+}
+
+.box {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  width: 100%;
+  border-radius: 10px;
+  border: 3px outset;
+  border-color: #e593af;
+  box-sizing: border-box;
+  animation: border-animation-bi 2s linear infinite;
+  cursor: grab;
+
+  &.rainbow {
+    border: 4px outset;
+    transform: translateY(-2.5px);
+    animation: border-animation-rainbow 5s linear infinite;
+  }
+
+  & .acheivedSticker {
+    position: fixed;
+    display: inline;
+    width: 40%;
+    right: -20px;
+    top: -40px;
+  }
+}
+
+.avatar {
+  width: 50px;
+  height: 50px;
+  margin: 15px;
+  animation: hue-rotate-animation-bi 2s linear infinite;
+
+  &.rainbow {
+    animation: hue-rotate-animation-rainbow 5s .5s linear infinite;
+  }
+}
+
+.name {
+  height: 80px;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 20px 10px -20px 30px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.intro {
+  grid-column: 1/3;
+  padding: 0 20px 20px;
+}
+
+@keyframes border-animation-rainbow {
+  0% {
+    border-color: #e593af;
+  }
+
+  10% {
+    border-color: #e593af;
+  }
+
+  33% {
+    border-color: #8eb46c;
+  }
+
+  66% {
+    border-color: #71b3c8;
+  }
+
+  100% {
+    border-color: #af9ee5;
+  }
+}
+
+@keyframes border-animation-bi {
+  0% {
+    border-color: #e593af;
+  }
+
+  45% {
+    border-color: #e593af;
+  }
+
+  55% {
+    border-color: #71b3c8;
+  }
+
+  100% {
+    border-color: #71b3c8;
+  }
+}
+
+@keyframes hue-rotate-animation-rainbow {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes hue-rotate-animation-bi {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+
+  49% {
+    filter: hue-rotate(0deg);
+  }
+
+  50% {
+    filter: hue-rotate(220deg);
+  }
+
+  100% {
+    filter: hue-rotate(220deg);
+  }
+}
+</style>
