@@ -3,8 +3,8 @@ import { onBeforeUnmount, onErrorCaptured, onMounted, ref } from "vue";
 import OrdersOverview from "./components/OrdersOverview.vue";
 import BartenderWindow from "./components/BartenderWindow.vue";
 import DataService from "./service/DataService";
-import { OrderDTO, ProductsDTO } from "./dto/DTO";
 import AudioService from "./service/AudioService";
+import { OrderDTO, ProductsDTO } from "./dto/DTO";
 import Swal from "sweetalert2";
 
 let _showOrderControl = ref(false);

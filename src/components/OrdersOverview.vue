@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import DataService from "../service/DataService";
-import OrderList from "./OrderList.vue";
+import AudioService from "../service/AudioService";
 import { OrderDTO, ProductsDTO } from "../dto/DTO";
 import Swal from "sweetalert2";
+import EventManager from "../service/EventManager";
 
 const props = defineProps({
   bartenderId: String,
@@ -43,7 +44,28 @@ watch(
   { immediate: true }
 );
 
+function manageOrderStatus(orderId: string) {
+  if (!!showControls.value[orderId]) {
+    dismissOrderControls(orderId);
+    return;
+  }
+  EventManager.dismissAllOrderControls();
+  showControls.value[orderId] = true;
+}
+
+function dismissOrderControls(orderId: string) {
+  showControls.value[orderId] = false;
+}
+
+function dismissAllDishesControls() {
+  Object.keys(showControls.value).forEach((key) => {
+    showControls.value[key] = false;
+  });
+}
+EventManager.registerControlsDismissTriggerer(dismissAllDishesControls);
+
 function onClickOrderRedelivery(order: OrderDTO) {
+  AudioService.playVfxWindowShowUp();
   Swal.fire({
     title: `讓「${order.orderId}號」重新候餐嗎？？`,
     icon: "info",
@@ -53,6 +75,7 @@ function onClickOrderRedelivery(order: OrderDTO) {
     confirmButtonText: "是的",
     cancelButtonText: "不用",
   }).then((result) => {
+    AudioService.playVfxWindowDismiss();
     if (result.isConfirmed) {
       DataService.getOrderDB()
         .child(order.uuid)
@@ -62,8 +85,10 @@ function onClickOrderRedelivery(order: OrderDTO) {
         })
         .then((result) => {
           if (result.committed) {
-            dismissAllDishesControls();
+            EventManager.dismissAllOrderControls();
           } else {
+            AudioService.playVfxError();
+            console.warn(result);
             Swal.fire({
               title: "訂單更新失敗",
               icon: "error",
@@ -71,13 +96,19 @@ function onClickOrderRedelivery(order: OrderDTO) {
           }
         })
         .catch((err) => {
+          AudioService.playVfxError();
           console.warn(err);
+          Swal.fire({
+            title: "訂單更新失敗",
+            icon: "error",
+          });
         });
     }
   });
 }
 
 function onClickOrderDeliveried(order: OrderDTO) {
+  AudioService.playVfxWindowShowUp();
   Swal.fire({
     title: `「${order.orderId}號」已經取餐了嗎？`,
     icon: "info",
@@ -87,6 +118,7 @@ function onClickOrderDeliveried(order: OrderDTO) {
     confirmButtonText: "是的",
     cancelButtonText: "不用",
   }).then((result) => {
+    AudioService.playVfxWindowDismiss();
     if (result.isConfirmed) {
       DataService.getOrderDB()
         .child(order.uuid)
@@ -96,8 +128,10 @@ function onClickOrderDeliveried(order: OrderDTO) {
         })
         .then((result) => {
           if (result.committed) {
-            dismissAllDishesControls();
+            EventManager.dismissAllOrderControls();
           } else {
+            AudioService.playVfxError();
+            console.warn(result);
             Swal.fire({
               title: "訂單更新失敗",
               icon: "error",
@@ -105,13 +139,19 @@ function onClickOrderDeliveried(order: OrderDTO) {
           }
         })
         .catch((err) => {
+          AudioService.playVfxError();
           console.warn(err);
+          Swal.fire({
+            title: "訂單更新失敗",
+            icon: "error",
+          });
         });
     }
   });
 }
 
 function onClickOrderRecook(order: OrderDTO) {
+  AudioService.playVfxWindowShowUp();
   Swal.fire({
     title: `要重做「${order.orderId}號單」嗎？`,
     icon: "info",
@@ -121,6 +161,7 @@ function onClickOrderRecook(order: OrderDTO) {
     confirmButtonText: "是的",
     cancelButtonText: "不用",
   }).then((result) => {
+    AudioService.playVfxWindowDismiss();
     if (result.isConfirmed) {
       DataService.getOrderDB()
         .child(order.uuid)
@@ -134,8 +175,10 @@ function onClickOrderRecook(order: OrderDTO) {
         })
         .then((result) => {
           if (result.committed) {
-            dismissAllDishesControls();
+            EventManager.dismissAllOrderControls();
           } else {
+            AudioService.playVfxError();
+            console.warn(result);
             Swal.fire({
               title: "訂單更新失敗",
               icon: "error",
@@ -143,29 +186,25 @@ function onClickOrderRecook(order: OrderDTO) {
           }
         })
         .catch((err) => {
+          AudioService.playVfxError();
           console.warn(err);
+          Swal.fire({
+            title: "訂單更新失敗",
+            icon: "error",
+          });
         });
     }
   });
 }
 
-function manageOrderStatus(orderId: string) {
-  if (!!showControls.value[orderId]) {
-    dismissOrderControls(orderId);
-    return;
-  }
-  dismissAllDishesControls();
-  showControls.value[orderId] = true;
+function onClickOrderManage(orderId: string) {
+  AudioService.playVfxWindowShowUp();
+  manageOrderStatus(orderId);
 }
 
-function dismissOrderControls(orderId: string) {
-  showControls.value[orderId] = false;
-}
-
-function dismissAllDishesControls() {
-  Object.keys(showControls.value).forEach((key) => {
-    showControls.value[key] = false;
-  });
+function onClickDismissControls(orderId: string) {
+  AudioService.playVfxWindowDismiss();
+  dismissOrderControls(orderId);
 }
 </script>
 
@@ -176,7 +215,7 @@ function dismissAllDishesControls() {
         class="orderCard"
         v-for="order in orderList"
         :key="order.uuid"
-        @click="manageOrderStatus(order.orderId)"
+        @click="onClickOrderManage(order.orderId)"
       >
         <div class="upper">
           <div class="orderNo">#{{ order?.orderId }}</div>
@@ -225,7 +264,7 @@ function dismissAllDishesControls() {
             </button>
             <button
               class="back"
-              @click.stop="dismissOrderControls(order.orderId)"
+              @click.stop="onClickDismissControls(order.orderId)"
             >
               返回
             </button>
