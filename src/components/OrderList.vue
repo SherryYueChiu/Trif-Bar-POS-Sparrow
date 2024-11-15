@@ -172,7 +172,7 @@ function setDishFinished(
   });
 }
 
-function dismissDishControls(orderId: number, productId: string) {
+function dismissDishControls(orderId: string, productId: string) {
   showControls.value[`${orderId}-${productId}`] = false;
 }
 
@@ -242,15 +242,17 @@ function onClickRecook(order: OrderDTO, dish: ItemInOrderDTO) {
   setDishFinished(false, order, dish);
 }
 
-function onClickOrderManage(orderId: number, productId: string) {
+function onClickOrderManage(order: OrderDTO, productId: string) {
   AudioService.playVfxWindowShowUp();
+  EventManager.hightlightAnOrder(order);
   EventManager.dismissAllOrderControls();
-  showControls.value[`${orderId}-${productId}`] = true;
+  showControls.value[`${order.uuid}-${productId}`] = true;
 }
 
-function onClickDismissControls(orderId: number, productId: string) {
+function onClickDismissControls(orderId: string, productId: string) {
   AudioService.playVfxWindowDismiss();
   dismissDishControls(orderId, productId);
+  EventManager.unhighlightAnOrder();
 }
 </script>
 
@@ -268,8 +270,18 @@ function onClickDismissControls(orderId: number, productId: string) {
             return 0;
           })"
         :key="dish.productId"
-        class="orderCard"
-        @click.stop="onClickOrderManage(order.orderId, dish.productId)"
+        :class="[
+          'orderCard',
+          {
+            focus:
+              EventManager.getHighlightedOrder()?.value &&
+              EventManager.getHighlightedOrder().value?.uuid === order.uuid,
+            blur:
+              EventManager.getHighlightedOrder()?.value &&
+              EventManager.getHighlightedOrder().value?.uuid !== order.uuid,
+          },
+        ]"
+        @click.stop="onClickOrderManage(order, dish.productId)"
       >
         <div class="owner">#{{ order.orderId }}</div>
         <div class="dishDetail">
@@ -285,8 +297,7 @@ function onClickDismissControls(orderId: number, productId: string) {
           <div
             class="finished"
             v-show="
-              dish.finished &&
-              !showControls[`${order.orderId}-${dish.productId}`]
+              dish.finished && !showControls[`${order.uuid}-${dish.productId}`]
             "
           >
             待取餐
@@ -296,7 +307,7 @@ function onClickDismissControls(orderId: number, productId: string) {
             v-show="
               order.settled &&
               dish.finished &&
-              !showControls[`${order.orderId}-${dish.productId}`]
+              !showControls[`${order.uuid}-${dish.productId}`]
             "
           >
             已取餐
@@ -304,7 +315,7 @@ function onClickDismissControls(orderId: number, productId: string) {
         </div>
         <div
           class="controls"
-          v-show="!!showControls[`${order.orderId}-${dish.productId}`]"
+          v-show="!!showControls[`${order.uuid}-${dish.productId}`]"
         >
           <button class="reassgin" @click.stop="onClickReassign(order, dish)">
             轉單
@@ -325,7 +336,7 @@ function onClickDismissControls(orderId: number, productId: string) {
           </button>
           <button
             class="back"
-            @click.stop="onClickDismissControls(order.orderId, dish.productId)"
+            @click.stop="onClickDismissControls(order.uuid, dish.productId)"
           >
             返回
           </button>
@@ -355,6 +366,13 @@ function onClickDismissControls(orderId: number, productId: string) {
   background-color: #fff;
   user-select: none;
 
+  &.focus {
+    filter: drop-shadow(0px 0px 5px #000) contrast(1.2);
+  }
+  &.blur {
+    opacity: 0.5;
+    filter: grayscale(.2) blur(2px);
+  }
   & > .title {
     padding: 5px;
     margin-bottom: 10px;

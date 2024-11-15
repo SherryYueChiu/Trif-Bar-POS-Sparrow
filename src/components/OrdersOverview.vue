@@ -197,14 +197,16 @@ function onClickOrderRecook(order: OrderDTO) {
   });
 }
 
-function onClickOrderManage(orderId: string) {
+function onClickOrderManage(order: OrderDTO) {
   AudioService.playVfxWindowShowUp();
-  manageOrderStatus(orderId);
+  manageOrderStatus(order.uuid);
+  EventManager.hightlightAnOrder(order);
 }
 
 function onClickDismissControls(orderId: string) {
   AudioService.playVfxWindowDismiss();
   dismissOrderControls(orderId);
+  EventManager.unhighlightAnOrder();
 }
 </script>
 
@@ -215,7 +217,7 @@ function onClickDismissControls(orderId: string) {
         class="orderCard"
         v-for="order in orderList"
         :key="order.uuid"
-        @click="onClickOrderManage(order.orderId)"
+        @click="onClickOrderManage(order)"
       >
         <div class="upper">
           <div class="orderNo">#{{ order?.orderId }}</div>
@@ -232,19 +234,19 @@ function onClickDismissControls(orderId: string) {
               v-show="
                 order?.finished &&
                 !order?.settled &&
-                !showControls[order?.orderId]
+                !showControls[order?.uuid]
               "
             >
               待取餐
             </div>
             <div
               class="deliveried"
-              v-show="order?.settled && !showControls[order?.orderId]"
+              v-show="order?.settled && !showControls[order?.uuid]"
             >
               已取餐
             </div>
           </div>
-          <div class="controls" v-show="!!showControls[order?.orderId]">
+          <div class="controls" v-show="!!showControls[order?.uuid]">
             <button
               class="delivery"
               @click.stop="onClickOrderDeliveried(order)"
@@ -264,7 +266,7 @@ function onClickDismissControls(orderId: string) {
             </button>
             <button
               class="back"
-              @click.stop="onClickDismissControls(order.orderId)"
+              @click.stop="onClickDismissControls(order.uuid)"
             >
               返回
             </button>
