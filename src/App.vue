@@ -74,10 +74,7 @@ function updateProductList(data) {
 
 <template>
   <div class="main">
-    <OrdersOverview
-      :order-list="orderList"
-      :product-list="productList"
-    />
+    <OrdersOverview :order-list="orderList" :product-list="productList" />
     <BartenderWindow
       bartender-id="1"
       :bartenders="bartenders"
@@ -108,8 +105,7 @@ function updateProductList(data) {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 20% 80%;
-  height: calc(100% - 6px);
-  width: calc(100% - 6px);
+  width: 100%;
+  height: 100%;
 }
-
 </style>

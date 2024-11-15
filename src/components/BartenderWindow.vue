@@ -74,8 +74,11 @@ function updateBartenderName(data) {
 </template>
 
 <style scoped lang="scss">
+.bartenderWindow+.bartenderWindow{
+  padding-left: 2px;
+}
 .bartenderWindow {
-  padding: 10px 5px 10px 5px;
+  padding: 12px 10px 10px;
 
   & > .wrapper {
     // position: fixed;
