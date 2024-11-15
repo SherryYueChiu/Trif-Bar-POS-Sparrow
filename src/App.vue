@@ -31,9 +31,9 @@ onErrorCaptured((err) => {
 });
 
 function onInit() {
-  console.log("version: 2.0.0");
+  console.log("version: 2.1.0");
   Swal.fire({
-    title: "開始使用 Trif Bar POS 2.0",
+    title: "開始使用 Trif Bar POS 2.1",
     icon: "info",
   }).then(() => {
     AudioService.playVfxEmpty();
