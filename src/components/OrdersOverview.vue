@@ -318,7 +318,7 @@ function onClickDismissControls(orderId: string) {
         display: block;
         width: 100%;
         font-size: 1.5em;
-        line-height: 2em;
+        line-height: 1.5em;
         text-align: center;
         font-weight: 700;
         overflow: hidden;
@@ -328,6 +328,9 @@ function onClickDismissControls(orderId: string) {
         display: block;
         width: 100%;
         height: 1.5em;
+        left: 0;
+        padding: 0 0.5em 0;
+        box-sizing: border-box;
         font-size: 1em;
         text-align: center;
         overflow: hidden;
@@ -393,30 +396,32 @@ function onClickDismissControls(orderId: string) {
     & .controls {
       display: flex;
       position: absolute;
+      flex-direction: column;
       width: 100%;
-      height: 40%;
+      height: 100%;
       left: 0;
-      top: 60%;
+      top: 0;
       opacity: 0.9;
       & > button {
-        width: 33.3%;
+        width: 100%;
+        height: 33.3%;
         padding: 5px;
         background-color: #f0f0f0;
         font-size: 0.9em;
         cursor: pointer;
         &.delivery {
-          border-radius: 0 0 0 10px;
+          border-radius: 10px 10px 0 0;
           background-color: limegreen;
         }
         &.redelivery {
-          border-radius: 0 0 0 10px;
+          border-radius: 10px 10px 0 0;
           background-color: cadetblue;
         }
         &.recook {
           background-color: orangered;
         }
         &.back {
-          border-radius: 0 0 10px 0;
+          border-radius: 0 0 10px 10px;
           background-color: lightgray;
         }
       }

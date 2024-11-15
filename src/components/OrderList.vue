@@ -289,7 +289,17 @@ function onClickDismissControls(orderId: number, productId: string) {
               !showControls[`${order.orderId}-${dish.productId}`]
             "
           >
-            已完成
+            待取餐
+          </div>
+          <div
+            class="deliveried"
+            v-show="
+              order.settled &&
+              dish.finished &&
+              !showControls[`${order.orderId}-${dish.productId}`]
+            "
+          >
+            已取餐
           </div>
         </div>
         <div
@@ -412,7 +422,7 @@ function onClickDismissControls(orderId: number, productId: string) {
     left: 0;
     top: 0;
     opacity: 0.8;
-    & > .finished {
+    & > * {
       display: grid;
       place-items: center;
       position: absolute;
@@ -421,12 +431,17 @@ function onClickDismissControls(orderId: number, productId: string) {
       left: 0;
       top: 0;
       border-radius: 0.2em;
-      background-color: limegreen;
       color: white;
       font-size: 2em;
-      text-align: center;
       line-height: 1.8em;
+      text-align: center;
       overflow: hidden;
+    }
+    & > .finished {
+      background-color: cadetblue;
+    }
+    & > .deliveried {
+      background-color: limegreen;
     }
   }
 
@@ -442,11 +457,11 @@ function onClickDismissControls(orderId: number, productId: string) {
     & > button {
       width: 33.3%;
       padding: 5px 10px;
-      border-radius: 5px;
       background-color: #f0f0f0;
       font-size: 1.5em;
       cursor: pointer;
       &.reassgin {
+        border-radius: 5px 0 0 5px;
         background-color: lightblue;
       }
       &.prepared {
@@ -456,6 +471,7 @@ function onClickDismissControls(orderId: number, productId: string) {
         background-color: orangered;
       }
       &.back {
+        border-radius: 0 5px 5px 0;
         background-color: lightgray;
       }
     }

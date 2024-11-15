@@ -104,7 +104,7 @@ function updateProductList(data) {
   position: absolute;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 20% 80%;
+  grid-template-rows: max(20vh, 8em) 1fr;
   width: 100%;
   height: 100%;
 }
