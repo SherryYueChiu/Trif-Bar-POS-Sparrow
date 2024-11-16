@@ -77,6 +77,8 @@ function setDishFinished(
           .then((result) => {
             if (result.committed) {
               EventManager.dismissAllOrderControls();
+              if (!result.snapshot.val().settled)
+                EventManager.pushOrderToWaitingList(order);
             } else {
               AudioService.playVfxError();
               console.warn(result);
@@ -131,6 +133,7 @@ function setDishFinished(
           })
           .then((result) => {
             if (result.committed) {
+              EventManager.pushOrderToWaitingList(order);
             } else {
               AudioService.playVfxError();
               console.warn(result);

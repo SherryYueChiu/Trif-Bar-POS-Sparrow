@@ -122,6 +122,8 @@ function onClickOrderRedelivery(order: OrderDTO) {
         EventManager.dismissAllOrderControls();
         EventManager.unhighlightAnOrder();
         callbackSuccess();
+        if (!result.snapshot.val().settled)
+          EventManager.pushOrderToWaitingList(order);
       } else {
         AudioService.playVfxError();
         Swal.fire({
@@ -159,6 +161,7 @@ function onClickOrderDeliveried(order: OrderDTO) {
           })
           .then((result) => {
             if (result.committed) {
+              EventManager.pushOrderToWaitingList(order);
             } else {
               AudioService.playVfxError();
               console.warn(result);
@@ -232,6 +235,8 @@ function onClickOrderRecook(order: OrderDTO) {
           .then((result) => {
             if (result.committed) {
               EventManager.dismissAllOrderControls();
+              if (!result.snapshot.val().settled)
+                EventManager.pushOrderToWaitingList(order);
             } else {
               AudioService.playVfxError();
               console.warn(result);
