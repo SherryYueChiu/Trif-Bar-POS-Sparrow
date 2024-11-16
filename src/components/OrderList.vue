@@ -4,6 +4,7 @@ import DataService from "../service/DataService";
 import AudioService from "../service/AudioService";
 import { ItemInOrderDTO, OrderDTO, ProductsDTO } from "../dto/DTO";
 import Swal from "sweetalert2";
+import Toastify from "toastify-js";
 import EventManager from "../service/EventManager";
 
 const props = defineProps({
@@ -57,119 +58,130 @@ function setDishFinished(
   order: OrderDTO,
   dish: ItemInOrderDTO
 ) {
-  const dishName = productList.value[dish.productId].name;
-  Swal.fire({
-    title: isFinished
-      ? dish.amount > 1
-        ? `「${dish.amount}」份「${dishName}」都做完了嗎？`
-        : `「${dishName}」做完了嗎？`
-      : `要重做「${dishName}」嗎？`,
-    icon: "info",
-    showConfirmButton: true,
-    showDenyButton: false,
-    showCancelButton: true,
-    confirmButtonText: "是的",
-    cancelButtonText: isFinished ? "還沒" : "不用",
-  }).then((result) => {
-    AudioService.playVfxWindowDismiss();
-    if (result.isConfirmed) {
-      DataService.getOrderDB()
-        .child(order.uuid)
-        .transaction((orderDTO: OrderDTO) => {
-          Object.keys(orderDTO.orderItems).forEach((key) => {
-            const orderItem = orderDTO.orderItems[key];
-            if (
-              orderItem.preferBartender == +props.bartenderId &&
-              orderItem.productId === dish.productId
-            ) {
-              order.orderItems[key].finished = true;
-              orderDTO.orderItems[key].finished = isFinished;
+  let tempOrderDTO: OrderDTO;
+  const callbackSuccess = () => {
+    const toast = Toastify({
+      text: `#${order.orderId} 餐點${isFinished ? "完成" : "重做"}ㅤㅤundo?`,
+      duration: 4000,
+      close: true,
+      gravity: "top",
+      position: "right",
+      stopOnFocus: true,
+      onClick: function () {
+        toast.hideToast();
+        DataService.getOrderDB()
+          .child(order.uuid)
+          .transaction((orderDTO: OrderDTO) => {
+            return tempOrderDTO || orderDTO;
+          })
+          .then((result) => {
+            if (result.committed) {
+              EventManager.dismissAllOrderControls();
+            } else {
+              AudioService.playVfxError();
+              console.warn(result);
+              Swal.fire({
+                title: "訂單更新失敗",
+                icon: "error",
+              });
             }
+          })
+          .catch((err) => {
+            AudioService.playVfxError();
+            console.warn(err);
+            Swal.fire({
+              title: "訂單更新失敗",
+              icon: "error",
+            });
           });
-          return orderDTO;
-        })
-        .then(() => {
-          EventManager.dismissAllOrderControls();
-          Swal.fire({
-            title: "OK",
-            icon: "success",
-            showConfirmButton: false,
-            timer: 1500,
+      },
+    }).showToast();
+  };
+
+  AudioService.playVfxClick();
+  DataService.getOrderDB()
+    .child(order.uuid)
+    .transaction((orderDTO: OrderDTO) => {
+      tempOrderDTO = structuredClone(orderDTO);
+      Object.keys(orderDTO.orderItems).forEach((key) => {
+        const orderItem = orderDTO.orderItems[key];
+        if (
+          orderItem.preferBartender == +props.bartenderId &&
+          orderItem.productId === dish.productId
+        ) {
+          order.orderItems[key].finished = true;
+          orderDTO.orderItems[key].finished = isFinished;
+        }
+      });
+      return orderDTO;
+    })
+    .then(() => {
+      EventManager.dismissAllOrderControls();
+      EventManager.unhighlightAnOrder();
+      callbackSuccess();
+      if (
+        isFinished &&
+        Object.values(order.orderItems).every((item) => item.finished)
+      ) {
+        DataService.getOrderDB()
+          .child(order.uuid)
+          .transaction((orderDTO: OrderDTO) => {
+            orderDTO.finished = true;
+            return orderDTO;
+          })
+          .then((result) => {
+            if (result.committed) {
+            } else {
+              AudioService.playVfxError();
+              console.warn(result);
+              Swal.fire({
+                title: "訂單更新失敗",
+                icon: "error",
+              });
+            }
+          })
+          .catch((err) => {
+            AudioService.playVfxError();
+            console.warn(err);
+            Swal.fire({
+              title: "訂單更新失敗",
+              icon: "error",
+            });
           });
-          if (
-            isFinished &&
-            Object.values(order.orderItems).every((item) => item.finished)
-          ) {
-            DataService.getOrderDB()
-              .child(order.uuid)
-              .transaction((orderDTO: OrderDTO) => {
-                console.log(orderDTO);
-                orderDTO.finished = true;
-                return orderDTO;
-              })
-              .then((result) => {
-                if (result.committed) {
-                  Swal.fire({
-                    title: "訂單完成",
-                    icon: "success",
-                    showConfirmButton: false,
-                    timer: 1500,
-                  });
-                  EventManager.dismissAllOrderControls();
-                } else {
-                  AudioService.playVfxError();
-                  console.warn(result);
-                  Swal.fire({
-                    title: "訂單更新失敗",
-                    icon: "error",
-                  });
-                }
-              })
-              .catch((err) => {
-                AudioService.playVfxError();
-                console.warn(err);
-                Swal.fire({
-                  title: "訂單更新失敗",
-                  icon: "error",
-                });
+      } else if (
+        !isFinished &&
+        Object.values(order.orderItems).some((item) => item.finished)
+      ) {
+        DataService.getOrderDB()
+          .child(order.uuid)
+          .transaction((orderDTO: OrderDTO) => {
+            orderDTO.finished = false;
+            return orderDTO;
+          })
+          .then((result) => {
+            if (result.committed) {
+            } else {
+              AudioService.playVfxError();
+              console.warn(result);
+              Swal.fire({
+                title: "訂單更新失敗",
+                icon: "error",
               });
-          } else if (
-            !isFinished &&
-            Object.values(order.orderItems).some((item) => item.finished)
-          ) {
-            DataService.getOrderDB()
-              .child(order.uuid)
-              .transaction((orderDTO: OrderDTO) => {
-                orderDTO.finished = false;
-                return orderDTO;
-              })
-              .then((result) => {
-                if (result.committed) {
-                  EventManager.dismissAllOrderControls();
-                } else {
-                  AudioService.playVfxError();
-                  console.warn(result);
-                  Swal.fire({
-                    title: "訂單更新失敗",
-                    icon: "error",
-                  });
-                }
-              })
-              .catch((err) => {
-                AudioService.playVfxError();
-                console.warn(err);
-                Swal.fire({
-                  title: "訂單更新失敗",
-                  icon: "error",
-                });
-              });
-          }
-        })
-        .catch((err) => {
-          console.warn(err);
-        });
-    }
-  });
+            }
+          })
+          .catch((err) => {
+            AudioService.playVfxError();
+            console.warn(err);
+            Swal.fire({
+              title: "訂單更新失敗",
+              icon: "error",
+            });
+          });
+      }
+    })
+    .catch((err) => {
+      console.warn(err);
+    });
 }
 
 function dismissDishControls(orderId: string, productId: string) {
@@ -371,7 +383,7 @@ function onClickDismissControls(orderId: string, productId: string) {
   }
   &.blur {
     opacity: 0.5;
-    filter: grayscale(.2) blur(2px);
+    filter: grayscale(0.2) blur(2px);
   }
   & > .title {
     padding: 5px;

@@ -4,6 +4,7 @@ import DataService from "../service/DataService";
 import AudioService from "../service/AudioService";
 import { OrderDTO, ProductsDTO } from "../dto/DTO";
 import Swal from "sweetalert2";
+import Toastify from "toastify-js";
 import EventManager from "../service/EventManager";
 
 const props = defineProps({
@@ -68,136 +69,224 @@ function dismissAllControlsAndHightlight() {
 }
 
 function onClickOrderRedelivery(order: OrderDTO) {
-  AudioService.playVfxWindowShowUp();
-  Swal.fire({
-    title: `讓「${order.orderId}號」重新候餐嗎？？`,
-    icon: "info",
-    showConfirmButton: true,
-    showDenyButton: false,
-    showCancelButton: true,
-    confirmButtonText: "是的",
-    cancelButtonText: "不用",
-  }).then((result) => {
-    AudioService.playVfxWindowDismiss();
-    if (result.isConfirmed) {
-      DataService.getOrderDB()
-        .child(order.uuid)
-        .transaction((orderDTO: OrderDTO) => {
-          orderDTO.settled = false;
-          return orderDTO;
-        })
-        .then((result) => {
-          if (result.committed) {
-            EventManager.dismissAllOrderControls();
-          } else {
+  let tempOrderDTO: OrderDTO;
+  const callbackSuccess = () => {
+    const toast = Toastify({
+      text: `#${order.orderId} 顧客稍後取餐ㅤㅤundo?`,
+      duration: 4000,
+      close: true,
+      gravity: "top",
+      position: "right",
+      stopOnFocus: true,
+      onClick: function () {
+        toast.hideToast();
+        DataService.getOrderDB()
+          .child(order.uuid)
+          .transaction((orderDTO: OrderDTO) => {
+            return tempOrderDTO || orderDTO;
+          })
+          .then((result) => {
+            if (result.committed) {
+              EventManager.dismissAllOrderControls();
+            } else {
+              AudioService.playVfxError();
+              console.warn(result);
+              Swal.fire({
+                title: "訂單更新失敗",
+                icon: "error",
+              });
+            }
+          })
+          .catch((err) => {
             AudioService.playVfxError();
-            console.warn(result);
+            console.warn(err);
             Swal.fire({
               title: "訂單更新失敗",
               icon: "error",
             });
-          }
-        })
-        .catch((err) => {
-          AudioService.playVfxError();
-          console.warn(err);
-          Swal.fire({
-            title: "訂單更新失敗",
-            icon: "error",
           });
+      },
+    }).showToast();
+  };
+
+  AudioService.playVfxClick();
+  DataService.getOrderDB()
+    .child(order.uuid)
+    .transaction((orderDTO: OrderDTO) => {
+      tempOrderDTO = structuredClone(orderDTO);
+      orderDTO.settled = false;
+      return orderDTO;
+    })
+    .then((result) => {
+      if (result.committed) {
+        EventManager.dismissAllOrderControls();
+        EventManager.unhighlightAnOrder();
+        callbackSuccess();
+      } else {
+        AudioService.playVfxError();
+        Swal.fire({
+          title: "訂單更新失敗",
+          icon: "error",
         });
-    }
-  });
+      }
+    })
+    .catch((err) => {
+      AudioService.playVfxError();
+      console.warn(err);
+      Swal.fire({
+        title: "訂單更新失敗",
+        icon: "error",
+      });
+    });
 }
 
 function onClickOrderDeliveried(order: OrderDTO) {
-  AudioService.playVfxWindowShowUp();
-  Swal.fire({
-    title: `「${order.orderId}號」已經取餐了嗎？`,
-    icon: "info",
-    showConfirmButton: true,
-    showDenyButton: false,
-    showCancelButton: true,
-    confirmButtonText: "是的",
-    cancelButtonText: "不用",
-  }).then((result) => {
-    AudioService.playVfxWindowDismiss();
-    if (result.isConfirmed) {
-      DataService.getOrderDB()
-        .child(order.uuid)
-        .transaction((orderDTO: OrderDTO) => {
-          orderDTO.settled = true;
-          return orderDTO;
-        })
-        .then((result) => {
-          if (result.committed) {
-            EventManager.dismissAllOrderControls();
-          } else {
+  let tempOrderDTO: OrderDTO;
+  const callbackSuccess = () => {
+    const toast = Toastify({
+      text: `#${order.orderId} 顧客已取餐ㅤㅤundo?`,
+      duration: 4000,
+      close: true,
+      gravity: "top",
+      position: "right",
+      stopOnFocus: true,
+      onClick: function () {
+        toast.hideToast();
+        DataService.getOrderDB()
+          .child(order.uuid)
+          .transaction((orderDTO: OrderDTO) => {
+            return tempOrderDTO || orderDTO;
+          })
+          .then((result) => {
+            if (result.committed) {
+            } else {
+              AudioService.playVfxError();
+              console.warn(result);
+              Swal.fire({
+                title: "訂單更新失敗",
+                icon: "error",
+              });
+            }
+          })
+          .catch((err) => {
             AudioService.playVfxError();
-            console.warn(result);
+            console.warn(err);
             Swal.fire({
               title: "訂單更新失敗",
               icon: "error",
             });
-          }
-        })
-        .catch((err) => {
-          AudioService.playVfxError();
-          console.warn(err);
-          Swal.fire({
-            title: "訂單更新失敗",
-            icon: "error",
           });
+      },
+    }).showToast();
+  };
+
+  AudioService.playVfxClick();
+  DataService.getOrderDB()
+    .child(order.uuid)
+    .transaction((orderDTO: OrderDTO) => {
+      tempOrderDTO = structuredClone(orderDTO);
+      orderDTO.settled = true;
+      return orderDTO;
+    })
+    .then((result) => {
+      if (result.committed) {
+        EventManager.dismissAllOrderControls();
+        EventManager.unhighlightAnOrder();
+        callbackSuccess();
+      } else {
+        AudioService.playVfxError();
+        console.warn(result);
+        Swal.fire({
+          title: "訂單更新失敗",
+          icon: "error",
         });
-    }
-  });
+      }
+    })
+    .catch((err) => {
+      AudioService.playVfxError();
+      console.warn(err);
+      Swal.fire({
+        title: "訂單更新失敗",
+        icon: "error",
+      });
+    });
 }
 
 function onClickOrderRecook(order: OrderDTO) {
-  AudioService.playVfxWindowShowUp();
-  Swal.fire({
-    title: `要重做「${order.orderId}號單」嗎？`,
-    icon: "info",
-    showConfirmButton: true,
-    showDenyButton: false,
-    showCancelButton: true,
-    confirmButtonText: "是的",
-    cancelButtonText: "不用",
-  }).then((result) => {
-    AudioService.playVfxWindowDismiss();
-    if (result.isConfirmed) {
-      DataService.getOrderDB()
-        .child(order.uuid)
-        .transaction((orderDTO: OrderDTO) => {
-          Object.keys(orderDTO.orderItems).forEach((key) => {
-            orderDTO.orderItems[key].finished = false;
-          });
-          orderDTO.finished = false;
-          orderDTO.settled = false;
-          return orderDTO;
-        })
-        .then((result) => {
-          if (result.committed) {
-            EventManager.dismissAllOrderControls();
-          } else {
+  let tempOrderDTO: OrderDTO;
+  const callbackSuccess = () => {
+    const toast = Toastify({
+      text: `#${order.orderId} 餐點需要重出ㅤㅤundo?`,
+      duration: 4000,
+      close: true,
+      gravity: "top",
+      position: "right",
+      stopOnFocus: true,
+      onClick: function () {
+        toast.hideToast();
+        DataService.getOrderDB()
+          .child(order.uuid)
+          .transaction((orderDTO: OrderDTO) => {
+            return tempOrderDTO || orderDTO;
+          })
+          .then((result) => {
+            if (result.committed) {
+              EventManager.dismissAllOrderControls();
+            } else {
+              AudioService.playVfxError();
+              console.warn(result);
+              Swal.fire({
+                title: "訂單更新失敗",
+                icon: "error",
+              });
+            }
+          })
+          .catch((err) => {
             AudioService.playVfxError();
-            console.warn(result);
+            console.warn(err);
             Swal.fire({
               title: "訂單更新失敗",
               icon: "error",
             });
-          }
-        })
-        .catch((err) => {
-          AudioService.playVfxError();
-          console.warn(err);
-          Swal.fire({
-            title: "訂單更新失敗",
-            icon: "error",
           });
+      },
+    }).showToast();
+  };
+
+  AudioService.playVfxClick();
+  DataService.getOrderDB()
+    .child(order.uuid)
+    .transaction((orderDTO: OrderDTO) => {
+      tempOrderDTO = structuredClone(orderDTO);
+      Object.keys(orderDTO.orderItems).forEach((key) => {
+        orderDTO.orderItems[key].finished = false;
+      });
+      orderDTO.finished = false;
+      orderDTO.settled = false;
+      return orderDTO;
+    })
+    .then((result) => {
+      if (result.committed) {
+        EventManager.dismissAllOrderControls();
+        EventManager.unhighlightAnOrder();
+        callbackSuccess();
+      } else {
+        AudioService.playVfxError();
+        console.warn(result);
+        Swal.fire({
+          title: "訂單更新失敗",
+          icon: "error",
         });
-    }
-  });
+      }
+    })
+    .catch((err) => {
+      AudioService.playVfxError();
+      console.warn(err);
+      Swal.fire({
+        title: "訂單更新失敗",
+        icon: "error",
+      });
+    });
 }
 
 function onClickOrderManage(order: OrderDTO) {
@@ -235,9 +324,7 @@ function onClickDismissControls(orderId: string) {
             <div
               class="finished"
               v-show="
-                order?.finished &&
-                !order?.settled &&
-                !showControls[order?.uuid]
+                order?.finished && !order?.settled && !showControls[order?.uuid]
               "
             >
               待取餐
