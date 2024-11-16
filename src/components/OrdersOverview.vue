@@ -7,7 +7,6 @@ import Swal from "sweetalert2";
 import EventManager from "../service/EventManager";
 
 const props = defineProps({
-  bartenderId: String,
   orderList: {
     type: Array as () => Array<OrderDTO>,
     default: () => [],
@@ -18,7 +17,6 @@ const props = defineProps({
   },
 });
 
-let bartenderName = ref("");
 let orderList = ref([]);
 let productList = ref({});
 let showControls = ref<{ [key: string]: boolean }>({});
