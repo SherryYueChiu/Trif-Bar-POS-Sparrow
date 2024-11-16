@@ -64,6 +64,11 @@ function dismissAllDishesControls() {
 }
 EventManager.registerControlsDismissTriggerer(dismissAllDishesControls);
 
+function dismissAllControlsAndHightlight() {
+  EventManager.dismissAllOrderControls();
+  EventManager.unhighlightAnOrder();
+}
+
 function onClickOrderRedelivery(order: OrderDTO) {
   AudioService.playVfxWindowShowUp();
   Swal.fire({
@@ -212,12 +217,12 @@ function onClickDismissControls(orderId: string) {
 
 <template>
   <div class="ordersOverview">
-    <div class="wrapper">
+    <div class="wrapper" @click.stop="dismissAllControlsAndHightlight()">
       <div
         class="orderCard"
         v-for="order in orderList"
         :key="order.uuid"
-        @click="onClickOrderManage(order)"
+        @click.stop="onClickOrderManage(order)"
       >
         <div class="upper">
           <div class="orderNo">#{{ order?.orderId }}</div>

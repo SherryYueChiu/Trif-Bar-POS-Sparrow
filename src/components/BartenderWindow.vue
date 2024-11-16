@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import DataService from "../service/DataService";
 import OrderList from "./OrderList.vue";
 import { OrderDTO, ProductsDTO } from "../dto/DTO";
+import EventManager from "../service/EventManager";
 
 const props = defineProps({
   bartenderId: String,
@@ -53,11 +54,16 @@ watch(
 function updateBartenderName(data) {
   bartenderName.value = data.val();
 }
+
+function dismissAllControlsAndHightlight() {
+  EventManager.dismissAllOrderControls();
+  EventManager.unhighlightAnOrder();
+}
 </script>
 
 <template>
   <div class="bartenderWindow">
-    <div class="wrapper">
+    <div class="wrapper" @click.stop="dismissAllControlsAndHightlight()">
       <header>
         <div class="title">{{ bartenderName }}</div>
       </header>
