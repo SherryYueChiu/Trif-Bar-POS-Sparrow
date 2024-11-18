@@ -188,7 +188,11 @@ function onClickOrderDeliveried(order: OrderDTO) {
     .child(order.uuid)
     .transaction((orderDTO: OrderDTO) => {
       tempOrderDTO = structuredClone(orderDTO);
+      Object.keys(orderDTO.orderItems).forEach((key) => {
+        orderDTO.orderItems[key].finished = true;
+      });
       orderDTO.settled = true;
+      orderDTO.finished = true;
       return orderDTO;
     })
     .then((result) => {
